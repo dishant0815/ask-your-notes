@@ -1,0 +1,15 @@
+services:
+  db:
+    image: pgvector/pgvector:pg17        # Postgres 17 with the pgvector extension baked in
+    container_name: ask-notes-db
+    environment:
+      POSTGRES_USER: notes               # the database login name
+      POSTGRES_PASSWORD: notes           # local-only dev password (fine here; never do this in prod)
+      POSTGRES_DB: asknotes              # the database that gets created on first boot
+    ports:
+      - "5432:5432"                      # expose the DB on localhost:5432 so our app can reach it
+    volumes:
+      - pgdata:/var/lib/postgresql/data  # keep the data even if the container is recreated
+
+volumes:
+  pgdata:

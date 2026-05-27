@@ -1,0 +1,23 @@
+# .NET
+bin/
+obj/
+*.user
+
+# Secrets (we use dotnet user-secrets, which lives outside the repo,
+# but ignore these just in case a .env ever shows up)
+.env
+*.env.local
+appsettings.Development.local.json
+
+# Docker / data volumes
+infra/pgdata/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/local.properties
+android/.idea/
+
+# OS
+.DS_Store
