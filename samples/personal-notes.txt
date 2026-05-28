@@ -1,0 +1,16 @@
+Personal notes — May 2026
+
+Morning routine that actually stuck
+After three failed attempts at a 5am routine, I finally have one that lasts: wake at 6:15, drink a full glass of water before phone, 10 minutes of stretching, then 25 minutes of focused reading (no email until breakfast). The trick was protecting the window from email rather than waking up earlier. The "no phone before water" rule is the linchpin.
+
+Grandma's banana bread recipe
+Three overripe bananas, mashed. One cup of sugar. Half a cup of melted butter. Two eggs. One and a half cups of flour. One teaspoon of baking soda. A pinch of salt. Optional: half a cup of walnuts. Mix wet, fold in dry, pour into a greased loaf pan, bake at 350 F (175 C) for 55 minutes. The reason it's better than the modern versions: very ripe (almost black) bananas, and using melted butter, not oil.
+
+Meeting with Priya about the analytics dashboard, May 18
+Top takeaway: customers do not look at the dashboard daily. They look at it weekly, mostly on Mondays, and they want the trend across weeks more than the live counter. We are over-investing in real-time updates and under-investing in week-over-week comparisons. Next steps: replace the live counter with a 4-week sparkline, push the real-time view behind a toggle, and add an "export to CSV" link because three of the four people I shadowed copied numbers by hand. Owner: me. Target review date: June 3.
+
+Notes on the book "Working Backwards"
+The PR/FAQ document is the most concrete tool I've taken from this. Write the press release for the feature before you build it. If you can't make the press release sound exciting in plain language, the feature probably isn't worth building. Pair this with the six-page narrative memo (no slides) for internal decisions. The hardest part is the FAQ — that's where you discover the questions you have been avoiding.
+
+Gym programming for the next 8 weeks
+Three full-body sessions per week. Focus on the big lifts (squat, deadlift, overhead press, pull-up). Two minor cardio sessions of 25 minutes each, zone 2. Skip ab work — compound lifts cover it. Re-evaluate the program after eight weeks. Track only sleep hours, bodyweight on Wednesdays, and the working weight on each big lift. Anything more becomes noise.

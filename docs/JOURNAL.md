@@ -106,11 +106,34 @@ Locked in the design choices that shape the rest of the backend:
 - **`Failed to connect to 127.0.0.1:5432`** is the canonical "container engine isn't running" symptom: `colima start` → `docker compose up -d`.
 - Putting `Pgvector.Vector` directly on a Domain entity is a small Clean Architecture impurity — accepted as a pragmatic shortcut, would be mapped in Infrastructure in a stricter codebase.
 
+### Step 4 — Endpoints (`/docs` and `/ask`)
+
+- Added packages to `Infrastructure`: `Microsoft.SemanticKernel` 1.77.0, `Microsoft.SemanticKernel.Connectors.Google` 1.77.0-alpha, `UglyToad.PdfPig` 1.7.0-custom-5, `Microsoft.Extensions.Http`.
+- Defined the Application contracts: `IEmbeddingService`, `IAnswerService`, `ITextChunker`, `IDocumentTextExtractor`, `IDocumentStore`, plus the `SourceChunk` record.
+- Built the orchestration services in Application: `DocumentIngestionService` (used by `/docs`) and `AskService` (used by `/ask`, hard-codes top-k = 5).
+- Implemented in Infrastructure:
+  - `SimpleTextChunker` — char-based chunker with overlap (1000 / 100 defaults from [ADR-0005](decisions/0005-retrieval-chunking-and-topk.md)).
+  - `DocumentTextExtractor` — `.txt` and `.pdf` via PdfPig (copies stream into memory first because PdfPig needs a seekable source).
+  - `GeminiEmbeddingService` — **raw HTTP** against `:embedContent` / `:batchEmbedContents` (see [ADR-0009](decisions/0009-embeddings-raw-http-chat-semantic-kernel.md)).
+  - `GeminiAnswerService` — Semantic Kernel `Kernel` + `IChatCompletionService` via `AddGoogleAIGeminiChatCompletion` (`gemini-2.5-flash`). System prompt enforces strict grounding per [ADR-0006](decisions/0006-strict-grounding-and-citations.md).
+  - `DocumentStore` — EF Core for writes; raw SQL `SELECT … ORDER BY "Embedding" <=> {queryVec} LIMIT {topK}` for the vector search, via `Database.SqlQuery<TopChunkRow>(...)`.
+  - `DependencyInjection.AddInfrastructure(IConfiguration)` — one-stop registration.
+- `Api/Program.cs` now exposes:
+  - `GET /` — health check.
+  - `POST /docs` — `multipart/form-data` with a `file` field; returns `{ documentId, fileName, chunkCount }`.
+  - `POST /ask` — JSON `{ "question": "..." }`; returns `{ answer, sources: [{ documentId, fileName, ordinal, snippet }] }`.
+- Initialized `dotnet user-secrets` for the Api project.
+- Added `samples/personal-notes.txt` for end-to-end testing.
+
+### Step 4 — what we observed
+
+- Build is clean: 0 warnings, 0 errors, even with the SK Google connector still in alpha (SKEXP0070 suppressed at the file level rather than globally, to keep the experimental scope narrow).
+- The API boots in ~2 seconds; `GET /` returns immediately.
+- The first time the engine had stopped between sessions (laptop sleep): `Failed to connect to docker.sock` recovered with `colima start` then `docker compose up -d`. Same pattern as Milestone 2 / Step 3.
+
 ### Coming next in Milestone 2
 
-- Add **Semantic Kernel** + `Microsoft.SemanticKernel.Connectors.Google` to `Infrastructure`.
-- Define `IEmbeddingService` and `IAnswerService` interfaces in `Application`; implement them in `Infrastructure`.
-- Build a chunker (~1000 chars, ~100 overlap) and a PDF text extractor (`UglyToad.PdfPig`).
-- Wire `POST /docs` (upload → chunk → embed → store).
-- Wire `POST /ask` (embed query → retrieve top-5 → answer with citations).
-- Test end-to-end with `curl`; commit.
+- User sets the Gemini key into the Api project's user-secrets:
+  `dotnet user-secrets --project backend/src/Api set "Gemini:ApiKey" "<key>"`
+- Run the API, `curl` an upload of `samples/personal-notes.txt`, ask a question that should be answered from those notes, and one that shouldn't (to verify the "not in your notes" path works).
+- Commit + push the test session, close Milestone 2.

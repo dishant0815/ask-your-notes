@@ -23,3 +23,4 @@ ADRs are **append-only**. If a decision is later reversed, we add a new ADR that
 | [0006](0006-strict-grounding-and-citations.md) | Strict grounding; return answer + source-list citations | Accepted | 2026-05-27 |
 | [0007](0007-deploy-timing-after-mvp.md) | Deploy publicly only after MVP works locally | Accepted | 2026-05-27 |
 | [0008](0008-public-github-repo.md) | Host the repository publicly on GitHub | Accepted | 2026-05-27 |
+| [0009](0009-embeddings-raw-http-chat-semantic-kernel.md) | Embeddings via raw HTTP; chat via Semantic Kernel | Accepted | 2026-05-28 |

@@ -93,6 +93,7 @@ For each, the full reasoning lives in [`docs/decisions/`](docs/decisions/):
 - **~1000-char chunks, top-k = 5** for retrieval ([ADR-0005](docs/decisions/0005-retrieval-chunking-and-topk.md))
 - **Strict grounding** — say "not in your notes" rather than guess ([ADR-0006](docs/decisions/0006-strict-grounding-and-citations.md))
 - **Deploy after the MVP works locally** (Milestone 4) ([ADR-0007](docs/decisions/0007-deploy-timing-after-mvp.md))
+- **Embeddings via raw HTTP, chat via Semantic Kernel** — pragmatic split given SK Google connector is still in alpha ([ADR-0009](docs/decisions/0009-embeddings-raw-http-chat-semantic-kernel.md))
 
 ## License
 
