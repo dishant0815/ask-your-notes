@@ -47,7 +47,7 @@ ask-your-notes/
 |---|---|---|
 | 0 | Decisions & dev environment | ✅ Complete |
 | 1 | Tiny RAG primitive (Postgres + pgvector + embedding demo) | ✅ Complete |
-| 2 | .NET backend: `/docs` ingest + `/ask` answer-with-citations | 🟡 In progress |
+| 2 | .NET backend: `/docs` ingest + `/ask` answer-with-citations | ✅ Complete |
 | 3 | Android app: Documents / Upload / Chat screens | ⏳ |
 | 4 | Polish + deployment (Neon/Supabase + container host) | ⏳ |
 

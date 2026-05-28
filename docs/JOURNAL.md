@@ -131,9 +131,57 @@ Locked in the design choices that shape the rest of the backend:
 - The API boots in ~2 seconds; `GET /` returns immediately.
 - The first time the engine had stopped between sessions (laptop sleep): `Failed to connect to docker.sock` recovered with `colima start` then `docker compose up -d`. Same pattern as Milestone 2 / Step 3.
 
-### Coming next in Milestone 2
+### Step 5 — End-to-end test
 
-- User sets the Gemini key into the Api project's user-secrets:
-  `dotnet user-secrets --project backend/src/Api set "Gemini:ApiKey" "<key>"`
-- Run the API, `curl` an upload of `samples/personal-notes.txt`, ask a question that should be answered from those notes, and one that shouldn't (to verify the "not in your notes" path works).
-- Commit + push the test session, close Milestone 2.
+Set the Gemini key into the Api project's user-secrets, then:
+
+```bash
+# Start the API in Development (so user-secrets loads -- see "gotcha" below).
+ASPNETCORE_ENVIRONMENT=Development ASPNETCORE_URLS="http://127.0.0.1:5057" \
+  dotnet run --project src/Api --no-launch-profile
+
+# Upload the sample notes.
+curl -X POST -F "file=@samples/personal-notes.txt" http://127.0.0.1:5057/docs
+# -> { "documentId": "9ae97145-...", "fileName": "personal-notes.txt", "chunkCount": 3 }
+
+# Positive test -- should answer from the notes.
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"question":"What is the morning routine that finally stuck?"}' \
+  http://127.0.0.1:5057/ask
+# -> answer: "...wake at 6:15, drink a full glass of water before phone..."
+#    sources: chunk 0 (the morning-routine paragraph) cited correctly.
+
+# Negative test -- NOT in the notes; must refuse.
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"question":"What is the capital of France?"}' \
+  http://127.0.0.1:5057/ask
+# -> answer: "I couldn't find that in your notes."
+#    sources: closest chunks still returned (top-k is unconditional), but the
+#    LLM correctly refused to answer from general knowledge.
+```
+
+Database state after the run:
+
+```
+document_count = 1
+chunk_count    = 3   (avg 820 chars per chunk, target 1000)
+```
+
+### Gotcha worth remembering
+
+`dotnet run --no-launch-profile` defaults to **`ASPNETCORE_ENVIRONMENT=Production`**, and **user-secrets only load in `Development`**. First test attempt returned `HTTP 500` with `Missing Gemini:ApiKey` even though the key was correctly set — the API just wasn't being told to look there. Setting `ASPNETCORE_ENVIRONMENT=Development` before `dotnet run` fixed it. The launch-profile (`Properties/launchSettings.json`) normally handles this for you; if you run without it, set the env variable yourself.
+
+### What we learned
+
+- **End-to-end RAG actually works on our stack.** Upload → chunk → embed → store → retrieve → answer + citations, all green.
+- **Strict grounding (ADR-0006) is not just a setting; it is a tested behavior.** The negative test is the proof — a naïve setup would have answered "Paris."
+- **Two stale-process gotchas** that are useful to recognize:
+  - `dotnet run` in the background isn't fully killed by `kill <pid>` on the shell wrapper — the child .NET process can linger and hold the port. `pkill -f "AskYourNotes.Api"` is the reliable cleanup.
+  - The "address already in use" stack trace from Kestrel tells you immediately: something is on your port. `lsof -nP -iTCP:<port> -sTCP:LISTEN` shows what.
+- **The `Hosting environment: Production` log line at startup is a first-class diagnostic** — when a working app suddenly stops finding its config, check that line first.
+
+### Milestone 2 — complete
+
+`POST /docs` and `POST /ask` are working end-to-end. The backend is the full RAG MVP.
+
+**Next:** Milestone 3 — the Android app (Documents / Upload / Chat screens) talking to these endpoints.
