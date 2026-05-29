@@ -10,6 +10,21 @@ builder.Services.AddOpenApi();
 // EF Core + Gemini + chunker + extractor + orchestration services -- all in one call.
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// CORS: browsers refuse cross-origin requests by default. The Next.js dev server
+// runs at http://localhost:3000; the deployed origin is added via configuration
+// in Milestone 4. Allowed origins live in appsettings under "Cors:AllowedOrigins".
+builder.Services.AddCors(options =>
+{
+    var allowed = builder.Configuration
+        .GetSection("Cors:AllowedOrigins").Get<string[]>()
+        ?? new[] { "http://localhost:3000" };
+
+    options.AddDefaultPolicy(policy => policy
+        .WithOrigins(allowed)
+        .AllowAnyHeader()
+        .AllowAnyMethod());
+});
+
 var app = builder.Build();
 
 if (app.Environment.IsDevelopment())
@@ -17,11 +32,13 @@ if (app.Environment.IsDevelopment())
     app.MapOpenApi();
 }
 
+app.UseCors();   // must run before endpoint mapping for CORS headers to attach.
+
 // --- Health check ---------------------------------------------------------
 app.MapGet("/", () => "Ask Your Notes API is running.");
 
 // --- GET /docs ------------------------------------------------------------
-// List every uploaded document, newest first. The Android "Documents" screen
+// List every uploaded document, newest first. The web app's Documents page
 // calls this to populate its list. We project to a small DTO so we never
 // accidentally serialize the 3072-number embedding column to the client.
 app.MapGet("/docs", async (AppDbContext db, CancellationToken ct) =>
