@@ -1,6 +1,7 @@
 # ADR-0010: Android stack — Retrofit for HTTP, MVVM with ViewModel + StateFlow
 
-- **Status:** Accepted
+- **Status:** **Superseded by [ADR-0011](0011-web-frontend-supersedes-android.md)** (2026-05-29). The frontend choice was re-opened the same day and Native Android was replaced with a Next.js web app. The reasoning here is preserved so future readers can see what was decided and why we changed course.
+- **Original status:** Accepted
 - **Date:** 2026-05-29
 - **Deciders:** Project owner
 

@@ -12,7 +12,7 @@ This is a learning vehicle. The author is a Product Manager + NYU MOT grad stude
 
 | Layer | Choice |
 |---|---|
-| Frontend | Native Android (Kotlin + Jetpack Compose) |
+| Frontend | **Next.js 15** (App Router, TypeScript, Tailwind) — see [ADR-0011](docs/decisions/0011-web-frontend-supersedes-android.md) for why this replaced the original Native Android plan |
 | Backend | .NET 10 Web API (Clean Architecture) |
 | Database | PostgreSQL 17 + [pgvector](https://github.com/pgvector/pgvector) |
 | AI orchestration | [Semantic Kernel](https://github.com/microsoft/semantic-kernel) |
@@ -38,7 +38,7 @@ ask-your-notes/
 │       ├── Application/      # use-cases, interfaces
 │       ├── Infrastructure/   # DB + Gemini implementations
 │       └── Api/              # HTTP endpoints
-└── android/                  # Milestone 3: Android app
+└── web/                      # Milestone 3: Next.js web app
 ```
 
 ## Milestones
@@ -48,8 +48,8 @@ ask-your-notes/
 | 0 | Decisions & dev environment | ✅ Complete |
 | 1 | Tiny RAG primitive (Postgres + pgvector + embedding demo) | ✅ Complete |
 | 2 | .NET backend: `/docs` ingest + `/ask` answer-with-citations | ✅ Complete |
-| 3 | Android app: Documents / Upload / Chat screens | ⏳ |
-| 4 | Polish + deployment (Neon/Supabase + container host) | ⏳ |
+| 3 | Web app (Next.js): Documents / Upload / Chat screens | 🟡 In progress |
+| 4 | Polish + deployment (Vercel for the web app, Neon/Supabase for Postgres, container host for the API) | ⏳ |
 
 Full chronological detail in [`docs/JOURNAL.md`](docs/JOURNAL.md).
 
