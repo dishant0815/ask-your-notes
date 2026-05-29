@@ -48,8 +48,8 @@ ask-your-notes/
 | 0 | Decisions & dev environment | ✅ Complete |
 | 1 | Tiny RAG primitive (Postgres + pgvector + embedding demo) | ✅ Complete |
 | 2 | .NET backend: `/docs` ingest + `/ask` answer-with-citations | ✅ Complete |
-| 3 | Web app (Next.js): Documents / Upload / Chat screens | 🟡 In progress |
-| 4 | Polish + deployment (Vercel for the web app, Neon/Supabase for Postgres, container host for the API) | ⏳ |
+| 3 | Web app (Next.js): Documents / Upload / Chat screens + chatbot UI polish | ✅ Complete |
+| 4 | Defense in depth + public deployment (Vercel + Fly.io + Neon) | 🟡 In progress |
 
 Full chronological detail in [`docs/JOURNAL.md`](docs/JOURNAL.md).
 

@@ -184,4 +184,41 @@ chunk_count    = 3   (avg 820 chars per chunk, target 1000)
 
 `POST /docs` and `POST /ask` are working end-to-end. The backend is the full RAG MVP.
 
-**Next:** Milestone 3 — the Android app (Documents / Upload / Chat screens) talking to these endpoints.
+---
+
+## Milestone 3 — Web frontend
+
+**Dates:** 2026-05-29 → 2026-05-30
+**Commits:** [`25b8526`](https://github.com/dishant0815/ask-your-notes/commit/25b8526), [`16448c6`](https://github.com/dishant0815/ask-your-notes/commit/16448c6), [`f90f387`](https://github.com/dishant0815/ask-your-notes/commit/f90f387), [`427dda5`](https://github.com/dishant0815/ask-your-notes/commit/427dda5), [`17abff1`](https://github.com/dishant0815/ask-your-notes/commit/17abff1), [`8092a7d`](https://github.com/dishant0815/ask-your-notes/commit/8092a7d)
+
+### What we did
+
+- **Added `GET /docs`** to the backend so a frontend list view has something to render. Newest-first, projects to a small DTO so the 3072-dim embedding can never accidentally serialize.
+- **Started down the Android path.** Installed Android Studio via Homebrew, wrote [ADR-0010](decisions/0010-android-stack-retrofit-mvvm.md) committing to Retrofit + MVVM + Compose + manual DI. Then…
+- **Pivoted to a web frontend mid-build.** The user paused before any Android code was written and asked, *"Do we specifically need Android for this project?"* That was the right PM question. The brief had said Android because *"the stack mirrors my real product"*, but the project's other goals — deploy publicly, portfolio reach, leverage existing skills, minimize cognitive load — all pointed to web. [ADR-0011](decisions/0011-web-frontend-supersedes-android.md) supersedes ADR-0010 with the new direction; the old ADR is preserved (not deleted) so future readers see the reasoning at the time and the link forward to what changed. **The first supersede in the project's ADR history.**
+- **Scaffolded a Next.js 16.2.6 app** under `web/` via `create-next-app` (App Router, TypeScript, Tailwind v4, ESLint, npm). Added `lib/api.ts` — a thin typed client that wraps `GET /docs`, `POST /docs`, `POST /ask` in one module so the rest of the app never builds a fetch by hand.
+- **Enabled CORS** on the backend (`AddCors` reading `Cors:AllowedOrigins` from config; `UseCors` before endpoint mapping). Browsers refuse cross-origin requests by default; without this, every `fetch` from Next dev would have been blocked.
+- **Built three pages.** All `"use client"` because each holds state + calls the backend:
+  - `app/page.tsx` (Documents) — `GET /docs`, friendly empty/error states.
+  - `app/upload/page.tsx` (Upload) — file picker, `POST /docs`, success state.
+  - `app/chat/page.tsx` (Chat) — Q/A turns, `POST /ask`, expandable source citations. Strict-grounding answers like *"I couldn't find that in your notes"* still render with sources, because top-k is unconditional.
+- **Polished the UI into a real chatbot feel.** Soft indigo→violet accent palette in CSS variables, custom keyframes (`fadeInUp`, `typingDot`, `pulseGlow`) registered via `@layer utilities`, no animation libraries. Sticky blurred header with gradient brand wordmark; document cards with hover-lift; drag-and-drop style upload zone; right-aligned gradient user bubbles, left-aligned assistant bubbles with sparkle avatars, animated three-dot typing indicator, sticky composer pill, fade-and-slide on each new message, example-prompt chips on the empty state.
+- **User-tested end to end.** Upload, positive ask, negative ask (out-of-notes refusal), all good. Both the curl path *and* the browser-driven path now prove RAG works.
+
+### What we learned
+
+- **The brief is the customer's first guess, not the spec.** Naming the underlying goals out loud (portfolio reach, deploy publicly, etc.) was what flipped the right decision. Worth doing earlier next time.
+- **ADR supersede is the right pattern.** Reading the supersede chain (0010 → 0011) tells the story; rewriting 0010 in place would have erased it.
+- **Tailwind v4's `@theme` + CSS-variable accent is enough for a real-feeling product.** Whole app re-skin = one file (`globals.css`) plus four CSS variables. No framework lock-in.
+- **Next.js 16 has breaking changes vs prior versions.** The auto-generated `AGENTS.md` in the project warned us to consult `node_modules/next/dist/docs/` rather than rely on training data. Useful pattern.
+
+### Gotchas worth remembering
+
+- **`Hosting environment: Production` + missing user-secrets** — same trap as Milestone 2; user-secrets only load in `Development`. `--no-launch-profile` skips the `launchSettings.json` that would have set this for you.
+- **Stale dev servers hold ports.** `kill <pid>` of a shell wrapper doesn't always reach the .NET / Next child. `pkill -f` on the executable name is the reliable cleanup. `lsof -nP -iTCP:<port> -sTCP:LISTEN` tells you what's there.
+
+### Milestone 3 — complete
+
+The web app is the working interface to the RAG backend, with the citations / strict-grounding contract from ADR-0006 fully exposed in the UI.
+
+**Next:** Milestone 4 — make it public. Containerize the backend, add defense in depth ([ADR-0012](decisions/0012-public-deployment-defense-in-depth.md): shared password + size limits + per-IP rate limit + per-IP daily question cap), set a Gemini quota cap, then deploy: Neon (Postgres+pgvector), Fly.io (the .NET container), Vercel (the Next.js app).

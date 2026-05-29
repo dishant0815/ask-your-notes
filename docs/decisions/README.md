@@ -26,3 +26,4 @@ ADRs are **append-only**. If a decision is later reversed, we add a new ADR that
 | [0009](0009-embeddings-raw-http-chat-semantic-kernel.md) | Embeddings via raw HTTP; chat via Semantic Kernel | Accepted | 2026-05-28 |
 | [0010](0010-android-stack-retrofit-mvvm.md) | Android stack — Retrofit for HTTP, MVVM with ViewModel + StateFlow | **Superseded by 0011** | 2026-05-29 |
 | [0011](0011-web-frontend-supersedes-android.md) | Replace Native Android with a Next.js web frontend | Accepted | 2026-05-29 |
+| [0012](0012-public-deployment-defense-in-depth.md) | Defense-in-depth for the public deployment — shared password + 4 layers | Accepted | 2026-05-30 |
