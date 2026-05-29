@@ -1,6 +1,7 @@
 using AskYourNotes.Application.Asking;
 using AskYourNotes.Application.Ingestion;
 using AskYourNotes.Infrastructure;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,25 @@ if (app.Environment.IsDevelopment())
 
 // --- Health check ---------------------------------------------------------
 app.MapGet("/", () => "Ask Your Notes API is running.");
+
+// --- GET /docs ------------------------------------------------------------
+// List every uploaded document, newest first. The Android "Documents" screen
+// calls this to populate its list. We project to a small DTO so we never
+// accidentally serialize the 3072-number embedding column to the client.
+app.MapGet("/docs", async (AppDbContext db, CancellationToken ct) =>
+{
+    var docs = await db.Documents
+        .OrderByDescending(d => d.UploadedAtUtc)
+        .Select(d => new
+        {
+            documentId = d.Id,
+            fileName = d.FileName,
+            uploadedAtUtc = d.UploadedAtUtc,
+            chunkCount = d.Chunks.Count
+        })
+        .ToListAsync(ct);
+    return Results.Ok(docs);
+});
 
 // --- POST /docs -----------------------------------------------------------
 // Upload a .txt or .pdf. The backend extracts text, chunks it (~1000 chars,
