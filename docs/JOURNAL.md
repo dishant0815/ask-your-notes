@@ -222,3 +222,50 @@ chunk_count    = 3   (avg 820 chars per chunk, target 1000)
 The web app is the working interface to the RAG backend, with the citations / strict-grounding contract from ADR-0006 fully exposed in the UI.
 
 **Next:** Milestone 4 — make it public. Containerize the backend, add defense in depth ([ADR-0012](decisions/0012-public-deployment-defense-in-depth.md): shared password + size limits + per-IP rate limit + per-IP daily question cap), set a Gemini quota cap, then deploy: Neon (Postgres+pgvector), Fly.io (the .NET container), Vercel (the Next.js app).
+
+---
+
+## Milestone 4 — Defense in depth, then a deliberate stop
+
+**Dates:** 2026-05-30
+**Commits:** [`d7d003a`](https://github.com/dishant0815/ask-your-notes/commit/d7d003a), [`2637bd2`](https://github.com/dishant0815/ask-your-notes/commit/2637bd2), [`8d9feff`](https://github.com/dishant0815/ask-your-notes/commit/8d9feff), [`e3ad34b`](https://github.com/dishant0815/ask-your-notes/commit/e3ad34b), [`98077ae`](https://github.com/dishant0815/ask-your-notes/commit/98077ae) + this commit
+
+### What we did
+
+- **Picked an auth strategy** for the public-`/ask` problem (anyone with the URL spends your Gemini quota). Started with a four-layer defense-in-depth plan ([ADR-0012](decisions/0012-public-deployment-defense-in-depth.md): shared password + request size limits + per-IP rate limit + per-IP daily `/ask` cap + a Gemini quota cap set in AI Studio).
+- **Trimmed it** to two layers when the project owner pushed back on whether all four were load-bearing. Honest re-assessment: shared password + size limits are real protection; the rate limiters mostly overlap with Google's free-tier built-in daily cap. ADR-0012 was **amended** with that reasoning rather than rewritten.
+- **Implemented the trimmed plan:**
+  - Backend (`backend/src/Api/Program.cs`): `API_PASSWORD` env-var-driven middleware gates `/docs` and `/ask`; `/` stays public for platform health checks. CORS preflights pass through. Missing password in Production fails closed at startup; missing in Development logs a loud warning. 5 MB form-data cap (Kestrel + FormOptions). 1000-char question cap.
+  - Web (`web/lib/auth.ts`, `web/lib/api.ts`, `web/app/AuthGate.tsx`): localStorage-backed password, `Authorization: Bearer …` injected on every API call, 401 clears the stored password and re-shows the login screen. Login UI matches the gradient/accent vibe of the rest of the app.
+- **Smoke-tested every path locally:** `/` 200, `/docs` 401 without auth and with wrong password, 200 with correct, `/ask` 400 on oversized question. Then in the browser through the login screen.
+- **Improved the README with a full run-from-fresh guide** — one-time per-machine, one-time per fresh clone, daily three-terminal run, reset, troubleshooting table for the five errors we'd already debugged.
+- **Containerized the backend** — multi-stage `Dockerfile` (sdk build stage → aspnet runtime stage), `.dockerignore`, listens on port 8080. First draft tripped on `AskYourNotes.sln` vs `.slnx` (the new .NET 10 XML format); fixed and verified the image runs and the auth + size-limit behavior is intact inside the container.
+- **Provisioned a Neon Postgres database** and ran the `InitialCreate` migration against it — `Documents`, `Chunks`, `__EFMigrationsHistory`, pgvector extension all confirmed.
+
+### Then the right PM moment
+
+After Neon, before flyctl, the project owner asked:
+
+> *"What exactly are we doing here? Why are we dealing with new things again and again? Can't we just simplify this app, and do we really need so many different tools to make this?"*
+
+Honest answer (captured in [ADR-0013](decisions/0013-ship-on-github-not-the-cloud.md)): the deployment phase teaches **DevOps**, not RAG. The original learning goal — *understanding the RAG stack (web + .NET + Postgres+pgvector + Semantic Kernel + Gemini)* — was met at the end of Milestone 3. Each remaining step (Fly + Vercel + wiring) was a new platform to learn that didn't advance that goal.
+
+The reframed conclusion: **the GitHub repo itself is the deliverable.** Code + ADRs + journal + commit history + a run-from-fresh guide are a stronger PM artifact than a half-deployed app would have been. The auth + Dockerfile we built stay in the repo as future-self groundwork; the deployment they were built for is descoped, with the reasoning preserved in ADR-0013 (which partially supersedes ADR-0007 and re-scopes ADR-0012).
+
+### What we learned
+
+- **Scope discipline is a PM skill, not a developer skill.** "Stop here unless I ask for more" was in the brief from day one — it took a Friday-afternoon question to actually invoke it. Worth practicing the question earlier next time: *"Does this next step advance the original goal, or am I just continuing because I started?"*
+- **ADRs that supersede and amend are the right way to record a reversal.** Both ADR-0010 → ADR-0011 (Android → web) and ADR-0007/0012 → ADR-0013 (deploy → don't) preserve the original thinking forward-linked to what changed and why. Cleaner than editing in place.
+- **Defense in depth scales to whatever threat model you actually have.** The same two layers (password + size limits) that were "trimmed" from the public-deploy plan are exactly right for a "share via a tunnel for an hour" model. Built once, useful in multiple scenarios.
+
+### Milestone 4 — complete (re-scoped definition of done)
+
+Definition of done: **the app runs locally from a fresh clone in ~10 minutes per the README, the build history tells the story, and a future reader can either run it themselves or follow the ADRs to ship it to the cloud.**
+
+All three criteria met. Project shipped.
+
+### Optional housekeeping the owner can do
+
+- Delete the unused Neon project: Neon dashboard → Settings → Delete project.
+- Stop dev servers when not in use: `Ctrl+C` in terminals, then `docker compose -f infra/docker-compose.yml down`, then `colima stop`.
+- Uninstall Android Studio if desired: `brew uninstall --cask android-studio` (it's been unused since the M3 pivot).

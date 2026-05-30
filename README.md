@@ -2,7 +2,7 @@
 
 A personal RAG (Retrieval-Augmented Generation) app: upload your notes or PDFs, ask questions in a chat, and get answers grounded in **your** documents — with citations pointing back to the source.
 
-> **Status:** Active learning project. See [Milestones](#milestones) below.
+> **Status:** ✅ Shipped. Runs locally per the [run guide](#run-it-locally). The repository — code, ADRs, journal, and commit history — is the deliverable; see [ADR-0013](docs/decisions/0013-ship-on-github-not-the-cloud.md) for why we did not pursue a hosted public deployment.
 
 ## Why this exists
 
@@ -49,7 +49,7 @@ ask-your-notes/
 | 1 | Tiny RAG primitive (Postgres + pgvector + embedding demo) | ✅ Complete |
 | 2 | .NET backend: `/docs` ingest + `/ask` answer-with-citations | ✅ Complete |
 | 3 | Web app (Next.js): Documents / Upload / Chat screens + chatbot UI polish | ✅ Complete |
-| 4 | Defense in depth + public deployment (Vercel + Fly.io + Neon) | 🟡 In progress |
+| 4 | Defense in depth + ship as a GitHub-hosted repo (no public deployment) | ✅ Complete |
 
 Full chronological detail in [`docs/JOURNAL.md`](docs/JOURNAL.md).
 
@@ -154,6 +154,7 @@ For each, the full reasoning lives in [`docs/decisions/`](docs/decisions/):
 - **Embeddings via raw HTTP, chat via Semantic Kernel** — pragmatic split given SK Google connector is still in alpha ([ADR-0009](docs/decisions/0009-embeddings-raw-http-chat-semantic-kernel.md))
 - **Web frontend (Next.js) instead of Native Android** — questioned the brief mid-build, picked the option that aligned with the deploy-publicly goal ([ADR-0011](docs/decisions/0011-web-frontend-supersedes-android.md), supersedes ADR-0010)
 - **Defense in depth for the public deploy** — shared password + request size limits + Gemini free-tier built-in cap; rate limiters deferred as scope trim ([ADR-0012](docs/decisions/0012-public-deployment-defense-in-depth.md))
+- **Ship as a GitHub repo, not a hosted public URL** — the deploy-related code (auth, Dockerfile) stays in the repo for future use; the deployment itself was scoped out as not advancing the learning goal ([ADR-0013](docs/decisions/0013-ship-on-github-not-the-cloud.md))
 
 ## License
 

@@ -82,3 +82,11 @@ A daily request/spend cap is set directly on the Gemini API key in **Google AI S
 If abuse ever materializes, the per-IP rate limiter is a ~20-minute follow-up; the seam in `Program.cs` after the auth middleware is the obvious slot to wire it into. A new ADR would record that re-decision at the time.
 
 **Why not just rewrite this ADR?** Because the original four-layer thinking *was* correct — defense-in-depth is the right frame. The trim is a deliberate scope choice with a real "ship vs. polish" trade-off, not a discovery that the original was wrong. Preserving the original lets a future reader see the full menu before they see what we shipped.
+
+## Second amendment — 2026-05-30 (same day)
+
+**Public deployment itself was re-scoped out.** Later in Milestone 4, the project owner reframed the goal of "deploy publicly" and chose to conclude the project as a GitHub-hosted artifact rather than a hosted live URL. See [ADR-0013](0013-ship-on-github-not-the-cloud.md) for that decision.
+
+The code changes from this ADR (shared password + request size limits in `Program.cs`) **stay in the repo** — they cost nothing locally and make the app safe to share temporarily via a tunnel (Cloudflare Tunnel, ngrok, etc.) if a public URL is ever wanted. The rate limiters that were already trimmed in the first amendment remain trimmed.
+
+In short: the defenses this ADR specifies are **built and ready**, but the threat model they were built for (a 24/7 public endpoint) no longer applies.
