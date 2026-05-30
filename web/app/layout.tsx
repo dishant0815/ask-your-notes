@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import AuthGate from "./AuthGate";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -31,8 +32,8 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             </div>
           </nav>
         </header>
-        <main className="mx-auto w-full max-w-3xl flex-1 px-6 py-10 animate-fade-in-up">
-          {children}
+        <main className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-6 py-10 animate-fade-in-up">
+          <AuthGate>{children}</AuthGate>
         </main>
         <footer className="mx-auto w-full max-w-3xl px-6 py-6 text-xs text-zinc-500">
           A learning project &middot;{" "}

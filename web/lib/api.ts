@@ -5,7 +5,19 @@
 // components) never builds a fetch by hand and the TypeScript types travel
 // with every response.
 
+import { clearPassword, getPassword } from "./auth";
+
 const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:5057";
+
+// -- Errors -----------------------------------------------------------------
+
+/** Thrown when the API rejects our credentials. UI re-shows the login screen. */
+export class UnauthorizedError extends Error {
+  constructor(message = "Unauthorized.") {
+    super(message);
+    this.name = "UnauthorizedError";
+  }
+}
 
 // -- Types mirror the backend DTOs -----------------------------------------
 
@@ -34,12 +46,34 @@ export type AskResult = {
   sources: Citation[];
 };
 
+// -- Internal helpers -------------------------------------------------------
+
+function authHeader(): HeadersInit {
+  const pw = getPassword();
+  return pw ? { Authorization: `Bearer ${pw}` } : {};
+}
+
+async function handleResponse(res: Response, label: string): Promise<Response> {
+  if (res.status === 401) {
+    clearPassword();
+    throw new UnauthorizedError("Wrong password. Please re-enter.");
+  }
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(`${label} failed (${res.status}): ${body || res.statusText}`);
+  }
+  return res;
+}
+
 // -- Calls ------------------------------------------------------------------
 
 /** GET /docs -- list all uploaded documents, newest first. */
 export async function listDocuments(): Promise<DocumentSummary[]> {
-  const res = await fetch(`${BASE_URL}/docs`, { cache: "no-store" });
-  if (!res.ok) throw new Error(`GET /docs failed: ${res.status} ${res.statusText}`);
+  const res = await fetch(`${BASE_URL}/docs`, {
+    cache: "no-store",
+    headers: authHeader(),
+  });
+  await handleResponse(res, "GET /docs");
   return res.json();
 }
 
@@ -47,11 +81,12 @@ export async function listDocuments(): Promise<DocumentSummary[]> {
 export async function uploadDocument(file: File): Promise<IngestResult> {
   const form = new FormData();
   form.append("file", file);
-  const res = await fetch(`${BASE_URL}/docs`, { method: "POST", body: form });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`POST /docs failed (${res.status}): ${body || res.statusText}`);
-  }
+  const res = await fetch(`${BASE_URL}/docs`, {
+    method: "POST",
+    body: form,
+    headers: authHeader(),
+  });
+  await handleResponse(res, "POST /docs");
   return res.json();
 }
 
@@ -59,12 +94,9 @@ export async function uploadDocument(file: File): Promise<IngestResult> {
 export async function ask(question: string): Promise<AskResult> {
   const res = await fetch(`${BASE_URL}/ask`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeader() },
     body: JSON.stringify({ question }),
   });
-  if (!res.ok) {
-    const body = await res.text().catch(() => "");
-    throw new Error(`POST /ask failed (${res.status}): ${body || res.statusText}`);
-  }
+  await handleResponse(res, "POST /ask");
   return res.json();
 }
