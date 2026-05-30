@@ -66,3 +66,19 @@ A daily request/spend cap is set directly on the Gemini API key in **Google AI S
 - ⚠️ **Per-IP is fakable.** An attacker with multiple IPs can multiply their cap. The Gemini quota cap remains the hard wall.
 - ⚠️ **`localStorage` on the web side** is readable by JavaScript on the same origin. Fine for a shared password used by people you trust; not fine if this became a real product.
 - ⚠️ **Behavioral note (worth its own line):** even with four layers, do not upload genuinely sensitive notes to this app. A learning project's security posture is not designed for that.
+
+## Amendment — 2026-05-30 (same day)
+
+**Trimmed scope, same decision frame.** During implementation, the project owner pushed back on whether all four layers were truly load-bearing. Honest re-assessment:
+
+- **Shared password** stays — it is the actual gate.
+- **Request size limits** stay — they are ~5 lines and prevent real, cheap-to-trigger damage.
+- **Per-IP rate limit** is **deferred**. Google's free-tier daily cap on the Gemini key already caps cost at the source, and the shared password is the realistic threat boundary. Adding the rate limiter would have been ~20–30 minutes for ~10% additional protection.
+- **Per-IP daily `/ask` cap** is **deferred** for the same reason — it overlapped with both the per-minute rate limit and Google's automatic cap.
+- **Gemini API Studio quota cap** is **deferred**. The free-tier built-in daily cap is functionally equivalent for this app's purposes; we could not locate the user-settable cap in the current AI Studio UI.
+
+**Net protection in the shipped MVP:** shared password + request size limits + Google's free-tier built-in daily cap + framework defaults (HTTPS via Vercel/Fly.io, SQL injection covered by EF Core, XSS by React).
+
+If abuse ever materializes, the per-IP rate limiter is a ~20-minute follow-up; the seam in `Program.cs` after the auth middleware is the obvious slot to wire it into. A new ADR would record that re-decision at the time.
+
+**Why not just rewrite this ADR?** Because the original four-layer thinking *was* correct — defense-in-depth is the right frame. The trim is a deliberate scope choice with a real "ship vs. polish" trade-off, not a discovery that the original was wrong. Preserving the original lets a future reader see the full menu before they see what we shipped.
