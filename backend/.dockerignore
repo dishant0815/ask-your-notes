@@ -1,0 +1,21 @@
+# Keep the build context lean. Anything excluded here doesn't get sent
+# to the Docker daemon and can't accidentally end up in the image.
+
+# Build artifacts (each project has its own; ** matches at any depth)
+**/bin/
+**/obj/
+
+# IDE / editor
+.vs/
+.idea/
+*.user
+.DS_Store
+
+# Local secrets (we use dotnet user-secrets, which lives in $HOME and
+# never enters the repo, but block .env just in case)
+.env
+.env.*
+
+# The Dockerfile + .dockerignore themselves are not needed inside the image
+Dockerfile
+.dockerignore
