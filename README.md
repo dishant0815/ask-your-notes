@@ -57,30 +57,88 @@ Full chronological detail in [`docs/JOURNAL.md`](docs/JOURNAL.md).
 
 Requires: macOS, [Homebrew](https://brew.sh/), an internet connection, and a free [Google Gemini API key](https://aistudio.google.com/app/apikey).
 
-```bash
-# One-time setup
-brew install colima docker docker-compose gh                  # container engine + GitHub CLI
-curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0   # .NET 10 SDK
+### One-time, per machine
 
-# Each session
-colima start                                                  # start the container engine
-docker compose -f infra/docker-compose.yml up -d              # Postgres 17 + pgvector
+```bash
+# .NET 10 SDK (Microsoft's no-sudo installer)
+curl -sSL https://dot.net/v1/dotnet-install.sh | bash -s -- --channel 10.0
+echo 'export DOTNET_ROOT="$HOME/.dotnet"'                  >> ~/.zshrc
+echo 'export PATH="$PATH:$HOME/.dotnet:$HOME/.dotnet/tools"' >> ~/.zshrc
+
+# Container engine + Docker CLI + Compose plugin
+brew install colima docker docker-compose
+mkdir -p ~/.docker && echo '{"cliPluginsExtraDirs":["/opt/homebrew/lib/docker/cli-plugins"]}' > ~/.docker/config.json
+
+# EF Core CLI (used for migrations)
+dotnet tool install --global dotnet-ef
 ```
 
-### Run the Milestone 1 embedding demo
+### One-time, per fresh clone of this repo
+
+```bash
+git clone https://github.com/dishant0815/ask-your-notes.git
+cd ask-your-notes
+
+# Boot Postgres + pgvector
+colima start
+docker compose -f infra/docker-compose.yml up -d
+
+# Create the schema
+dotnet ef database update \
+  --project backend/src/Infrastructure \
+  --startup-project backend/src/Api
+
+# Store your Gemini key in user-secrets (lives outside the repo)
+dotnet user-secrets --project backend/src/Api set "Gemini:ApiKey" "<paste-your-key>"
+
+# Optional: set a local password so you can exercise the auth gate
+dotnet user-secrets --project backend/src/Api set "API_PASSWORD" "testpw"
+
+# Install web dependencies
+(cd web && npm install)
+```
+
+### Daily run (three terminals)
+
+```bash
+# Terminal 1 — container engine + Postgres (no-op if already running)
+colima start
+docker compose -f infra/docker-compose.yml up -d
+
+# Terminal 2 — backend on http://localhost:5057
+cd backend && dotnet run --project src/Api
+
+# Terminal 3 — web on http://localhost:3000
+cd web && npm run dev
+```
+
+Open **http://localhost:3000**, enter the password you set (`testpw`, or anything if you skipped `API_PASSWORD`), and you're in.
+
+### Run the Milestone 1 embedding demo (standalone)
+
 ```bash
 cd rag-primitive
-dotnet user-secrets set "Gemini:ApiKey" "YOUR_KEY_HERE"
+dotnet user-secrets set "Gemini:ApiKey" "<paste-your-key>"
 dotnet run
 ```
 
-### Run the backend (Milestone 2 — in progress)
+### Reset (wipes all uploaded documents)
+
 ```bash
-cd backend
-dotnet ef database update --project src/Infrastructure --startup-project src/Api
-dotnet user-secrets --project src/Api set "Gemini:ApiKey" "YOUR_KEY_HERE"
-dotnet run --project src/Api
+docker compose -f infra/docker-compose.yml down -v   # -v also deletes the Postgres volume
+docker compose -f infra/docker-compose.yml up -d
+dotnet ef database update --project backend/src/Infrastructure --startup-project backend/src/Api
 ```
+
+### Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| `Failed to connect to 127.0.0.1:5432` | Container engine / Postgres is down: `colima start && docker compose -f infra/docker-compose.yml up -d` |
+| `Missing Gemini:ApiKey` at startup | Backend isn't running in `Development` (where user-secrets load) — check the `Hosting environment:` line in the log |
+| `Address already in use` on 5057 or 3000 | A stale server is holding the port: `pkill -f AskYourNotes.Api` or `pkill -f "next dev"` |
+| Login screen rejects the password | Backend's `API_PASSWORD` doesn't match what you typed — reset it via `dotnet user-secrets ... set "API_PASSWORD" "newpw"` and restart the backend |
+| Browser shows a CORS error | Backend is down, or `Cors:AllowedOrigins` in `backend/src/Api/appsettings.json` no longer includes `http://localhost:3000` |
 
 ## Key product decisions (the short version)
 
@@ -94,6 +152,8 @@ For each, the full reasoning lives in [`docs/decisions/`](docs/decisions/):
 - **Strict grounding** — say "not in your notes" rather than guess ([ADR-0006](docs/decisions/0006-strict-grounding-and-citations.md))
 - **Deploy after the MVP works locally** (Milestone 4) ([ADR-0007](docs/decisions/0007-deploy-timing-after-mvp.md))
 - **Embeddings via raw HTTP, chat via Semantic Kernel** — pragmatic split given SK Google connector is still in alpha ([ADR-0009](docs/decisions/0009-embeddings-raw-http-chat-semantic-kernel.md))
+- **Web frontend (Next.js) instead of Native Android** — questioned the brief mid-build, picked the option that aligned with the deploy-publicly goal ([ADR-0011](docs/decisions/0011-web-frontend-supersedes-android.md), supersedes ADR-0010)
+- **Defense in depth for the public deploy** — shared password + request size limits + Gemini free-tier built-in cap; rate limiters deferred as scope trim ([ADR-0012](docs/decisions/0012-public-deployment-defense-in-depth.md))
 
 ## License
 
